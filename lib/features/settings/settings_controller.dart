@@ -112,6 +112,7 @@ class SettingsController {
     _nativeSheetDraftValues.clear();
     _passwordVisit++;
     _clearNewMemoryDraft();
+    _memoryNotices.clear();
     ref.read(settingsPagesProvider.notifier).clear();
   }
 
@@ -140,6 +141,7 @@ class SettingsController {
         _nativeSheetDraftValues.clear();
         _passwordVisit++;
         _clearNewMemoryDraft();
+        _memoryNotices.clear();
       case NativeSheetControlChanged(
         id: 'sign-out',
         value: final bool keepServerDetails,
@@ -162,8 +164,12 @@ class SettingsController {
         // A password typed on an earlier visit is not combined with this one.
         if (detailId == 'password') _startPasswordVisit();
         // Back on the memory list, an Add Memory page left without Done is
-        // gone: the next one starts empty, as it is drawn.
-        if (detailId == 'memory-manage') _clearNewMemoryDraft();
+        // gone: the next one starts empty, as it is drawn. The memory pages
+        // are drawn again from the list too, without what they said.
+        if (detailId == 'memory-manage') {
+          _clearNewMemoryDraft();
+          _memoryNotices.clear();
+        }
         final hydration = ref.read(nativeSheetHydrationServiceProvider);
         // The native sheet fills in its own Profile page as it opens.
         if (detailId == NativeSheetRoutes.profile &&
@@ -341,19 +347,14 @@ class SettingsController {
     NativeSheetControlChanged sent,
     SettingsEventSource source,
   ) async {
-    // A memory page's Retry sends its text again, as the row it stands for.
-    final event = switch (sent.id) {
-      nativeMemoryAddRetryId => NativeSheetControlChanged(
-        id: 'memory-add-content',
-        value: sent.value,
-      ),
-      final id when id.startsWith(nativeMemorySaveRetryPrefix) =>
-        NativeSheetControlChanged(
-          id: 'memory-save:${id.substring(nativeMemorySaveRetryPrefix.length)}',
-          value: sent.value,
-        ),
-      _ => sent,
-    };
+    // A memory page's Retry sends the text its page last failed to send, as
+    // the row it stands for; once a send from the page went through, there
+    // is nothing left to send.
+    final isMemoryRetry =
+        sent.id == nativeMemoryAddRetryId ||
+        sent.id.startsWith(nativeMemorySaveRetryPrefix);
+    final event = isMemoryRetry ? _memoryRetryChange(sent.id) : sent;
+    if (event == null) return;
     final value = event.value;
     // A page opened from the native sheet arrives as it slides away, without
     // a second transition; one opened from a Flutter Settings page pushes as
@@ -507,6 +508,8 @@ class SettingsController {
           );
           if (refusal != null) {
             await _showMemoryEditRefusal(memoryId, refusal, content: value);
+          } else {
+            await _showMemoryChangeWent(memoryId);
           }
         }
         return;
@@ -695,7 +698,11 @@ class SettingsController {
             final refusal = await _runNativeMemoryAction(
               (memories, owner) => memories.add(value.trim(), owner: owner),
             );
+            _memoryNotices.remove(_memoryAddPageId);
             if (refusal != null) {
+              _memoryNotices[_memoryAddPageId] = refusal.canRetry
+                  ? value
+                  : null;
               await _surface.applyDetail(
                 buildNativeMemoryAddDetail(
                   currentAppLocalizations(),
@@ -1164,7 +1171,8 @@ class SettingsController {
         ?.value
         .where((candidate) => candidate.id == memoryId)
         .firstOrNull;
-    final pageId = 'memory-edit:${Uri.encodeComponent(memoryId)}';
+    final pageId = _memoryEditPageId(memoryId);
+    _memoryNotices[pageId] = refusal.canRetry ? content : null;
     if (memory == null) {
       // Not in the list read now, so there is nothing left to edit: the
       // page only says why.
@@ -1189,6 +1197,53 @@ class SettingsController {
         content: content,
         notice: refusal.text,
         canRetry: refusal.canRetry,
+      ),
+    );
+  }
+
+  /// The memory pages showing why a change did not go through, by page id,
+  /// each with the text its Retry sends again (null with no Retry).
+  final Map<String, String?> _memoryNotices = {};
+
+  static const _memoryAddPageId = 'memory-add';
+
+  static String _memoryEditPageId(String memoryId) =>
+      'memory-edit:${Uri.encodeComponent(memoryId)}';
+
+  /// The change memory Retry row [retryId] stands for: its page's own row,
+  /// with the text that page last failed to send. Null once that went
+  /// through, or with no such page.
+  NativeSheetControlChanged? _memoryRetryChange(String retryId) {
+    if (retryId == nativeMemoryAddRetryId) {
+      final text = _memoryNotices[_memoryAddPageId];
+      return text == null
+          ? null
+          : NativeSheetControlChanged(id: 'memory-add-content', value: text);
+    }
+    final encoded = retryId.substring(nativeMemorySaveRetryPrefix.length);
+    final text = _memoryNotices['memory-edit:$encoded'];
+    return text == null
+        ? null
+        : NativeSheetControlChanged(id: 'memory-save:$encoded', value: text);
+  }
+
+  /// A change to memory [memoryId] went through: its page no longer says
+  /// why an earlier one did not, nor offers to send that again.
+  Future<void> _showMemoryChangeWent(String memoryId) async {
+    if (!_memoryNotices.containsKey(_memoryEditPageId(memoryId))) return;
+    _memoryNotices.remove(_memoryEditPageId(memoryId));
+    final memory = ref
+        .read(userMemoriesProvider)
+        .asData
+        ?.value
+        .where((candidate) => candidate.id == memoryId)
+        .firstOrNull;
+    if (memory == null) return;
+    await _surface.applyDetail(
+      buildNativeMemoryEditDetail(
+        currentAppLocalizations(),
+        memory,
+        advanced: ref.read(appSettingsProvider).advancedFeaturesEnabled,
       ),
     );
   }
@@ -1325,7 +1380,11 @@ class SettingsController {
         owner: owner,
       ),
     );
-    if (refusal != null) await _showMemoryEditRefusal(memory.id, refusal);
+    if (refusal != null) {
+      await _showMemoryEditRefusal(memory.id, refusal);
+    } else {
+      await _showMemoryChangeWent(memory.id);
+    }
     return true;
   }
 
