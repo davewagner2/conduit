@@ -1503,6 +1503,7 @@ NativeAudioSheetParts buildNativeAudioSheetParts(
   final voiceProviderDetail = NativeSheetDetailConfig(
     id: NativeSheetRoutes.voiceProvider,
     title: l10n.voiceProviderTitle,
+    discardPrompt: nativeDiscardPrompt(l10n),
     sections: [
       NativeSheetSectionConfig(
         footer: voiceProviderCandidates.isEmpty
@@ -1713,6 +1714,7 @@ NativeSheetDetailConfig buildNativePasswordDetail(
   return NativeSheetDetailConfig(
     id: 'password',
     title: l10n.changePasswordTitle,
+    discardPrompt: nativeDiscardPrompt(l10n),
     subtitle: passwordChangeEnabled ? subtitle : null,
     items: items,
   );
@@ -1781,6 +1783,7 @@ NativeSheetDetailConfig buildNativeOpenRouterImageGenerationModelDetail(
     id: 'default-image-generation-model',
     title: l10n.defaultImageGenerationModel,
     subtitle: l10n.defaultImageGenerationModelDescription,
+    discardPrompt: nativeDiscardPrompt(l10n),
     items: [
       NativeSheetItemConfig(
         id: 'default-image-generation-model',
@@ -1804,6 +1807,7 @@ NativeSheetDetailConfig buildNativeSystemPromptDetail(
     id: 'system-prompt',
     title: l10n.yourSystemPrompt,
     subtitle: subtitle ?? l10n.yourSystemPromptDescription,
+    discardPrompt: nativeDiscardPrompt(l10n),
     items: [
       NativeSheetItemConfig(
         id: 'system-prompt',
@@ -1817,6 +1821,15 @@ NativeSheetDetailConfig buildNativeSystemPromptDetail(
     ],
   );
 }
+
+/// The question a Settings form asks before its unsaved changes are dropped.
+NativeSheetDiscardPrompt nativeDiscardPrompt(AppLocalizations l10n) =>
+    NativeSheetDiscardPrompt(
+      title: l10n.workspaceEditorDiscardTitle,
+      message: l10n.workspaceEditorDiscardMessage,
+      discardLabel: l10n.workspaceEditorDiscardConfirm,
+      keepLabel: l10n.workspaceEditorKeepEditing,
+    );
 
 /// Control id the native Webhook destinations row sends to open the Flutter
 /// Notifications page, where the destinations are managed.
@@ -1987,7 +2000,8 @@ NativeSheetItemConfig _nativeMemoryTypeItem(
   required String id,
   required String? type,
 }) {
-  final known = type == ServerMemory.userType || type == ServerMemory.contextType;
+  final known =
+      type == ServerMemory.userType || type == ServerMemory.contextType;
   return NativeSheetItemConfig(
     id: id,
     title: l10n.memoryTypeLabel,
@@ -2040,6 +2054,7 @@ NativeSheetDetailConfig buildNativeMemoryAddDetail(
       id: 'memory-add',
       title: l10n.addMemory,
       subtitle: l10n.memoryEditorDescription,
+      discardPrompt: nativeDiscardPrompt(l10n),
       items: [
         NativeSheetItemConfig(
           id: 'memory-add-content',
@@ -2055,6 +2070,7 @@ NativeSheetDetailConfig buildNativeMemoryAddDetail(
   return NativeSheetDetailConfig(
     id: 'memory-add',
     title: l10n.addMemory,
+    discardPrompt: nativeDiscardPrompt(l10n),
     confirmActionId: nativeMemoryNewSaveId,
     confirmActionLabel: l10n.save,
     sections: [
@@ -2112,6 +2128,7 @@ List<NativeSheetDetailConfig> buildNativeMemoryEditDetails(
       NativeSheetDetailConfig(
         id: 'memory-edit:${Uri.encodeComponent(memory.id)}',
         title: l10n.editMemory,
+        discardPrompt: nativeDiscardPrompt(l10n),
         sections: [
           NativeSheetSectionConfig(
             footer: l10n.memoryEditorDescription,
@@ -2166,6 +2183,7 @@ List<NativeSheetDetailConfig> buildNativeModelPromptLoadingDetails(
       NativeSheetDetailConfig(
         id: 'model-prompt:${Uri.encodeComponent(model.id)}',
         title: l10n.modelSystemPromptTitle(model.name),
+        discardPrompt: nativeDiscardPrompt(l10n),
         items: [
           buildNativeLoadingItem(
             l10n,
