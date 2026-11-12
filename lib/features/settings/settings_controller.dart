@@ -112,7 +112,7 @@ class SettingsController {
     _nativeSheetDraftValues.clear();
     _passwordVisit++;
     _clearNewMemoryDraft();
-    _memoryNotices.clear();
+    _startMemorySession();
     ref.read(settingsPagesProvider.notifier).clear();
   }
 
@@ -141,7 +141,7 @@ class SettingsController {
         _nativeSheetDraftValues.clear();
         _passwordVisit++;
         _clearNewMemoryDraft();
-        _memoryNotices.clear();
+        _startMemorySession();
       case NativeSheetControlChanged(
         id: 'sign-out',
         value: final bool keepServerDetails,
@@ -168,7 +168,7 @@ class SettingsController {
         // are drawn again from the list too, without what they said.
         if (detailId == 'memory-manage') {
           _clearNewMemoryDraft();
-          _memoryNotices.clear();
+          _startMemorySession();
         }
         final hydration = ref.read(nativeSheetHydrationServiceProvider);
         // The native sheet fills in its own Profile page as it opens.
@@ -502,10 +502,12 @@ class SettingsController {
         final encoded = event.id.substring('memory-save:'.length);
         final memoryId = Uri.decodeComponent(encoded);
         if (value is String) {
+          final session = _memorySession;
           final refusal = await _runNativeMemoryAction(
             (memories, owner) =>
                 memories.updateItem(memoryId, value, owner: owner),
           );
+          if (session != _memorySession) return;
           if (refusal != null) {
             await _showMemoryEditRefusal(memoryId, refusal, content: value);
           } else {
@@ -518,9 +520,11 @@ class SettingsController {
       if (event.id.startsWith('memory-delete:')) {
         final encoded = event.id.substring('memory-delete:'.length);
         final memoryId = Uri.decodeComponent(encoded);
+        final session = _memorySession;
         final refusal = await _runNativeMemoryAction(
           (memories, owner) => memories.deleteItem(memoryId, owner: owner),
         );
+        if (session != _memorySession) return;
         if (refusal != null) {
           await _showMemoryEditRefusal(memoryId, refusal);
           return;
@@ -695,9 +699,11 @@ class SettingsController {
           }
         case 'memory-add-content':
           if (value is String && value.trim().isNotEmpty) {
+            final session = _memorySession;
             final refusal = await _runNativeMemoryAction(
               (memories, owner) => memories.add(value.trim(), owner: owner),
             );
+            if (session != _memorySession) return;
             _memoryNotices.remove(_memoryAddPageId);
             if (refusal != null) {
               _memoryNotices[_memoryAddPageId] = refusal.canRetry
@@ -1201,6 +1207,17 @@ class SettingsController {
     );
   }
 
+  /// Counts the times the memory pages on screen stopped being the ones a
+  /// memory action was sent from: another account, Settings closing, the
+  /// memory list drawn again. An action's outcome shows only on the pages
+  /// it was sent from, never on a later visit's.
+  int _memorySession = 0;
+
+  void _startMemorySession() {
+    _memoryNotices.clear();
+    _memorySession++;
+  }
+
   /// The memory pages showing why a change did not go through, by page id,
   /// each with the text its Retry sends again (null with no Retry).
   final Map<String, String?> _memoryNotices = {};
@@ -1330,6 +1347,7 @@ class SettingsController {
         if (content.isEmpty) return true;
         final path = _newMemoryPath?.trim() ?? '';
         final type = _newMemoryType ?? ServerMemory.userType;
+        final session = _memorySession;
         final refusal = await _runNativeMemoryAction(
           (memories, owner) => memories.add(
             content,
@@ -1338,6 +1356,7 @@ class SettingsController {
             owner: owner,
           ),
         );
+        if (session != _memorySession) return true;
         if (refusal != null) {
           await _surface.applyDetail(
             buildNativeMemoryAddDetail(
@@ -1370,7 +1389,16 @@ class SettingsController {
         ?.value
         .where((candidate) => candidate.id == memoryId)
         .firstOrNull;
-    if (memory == null) return true;
+    if (memory == null) {
+      // Gone from the server meanwhile (cleared, say): the page says so
+      // rather than seeming to take the change.
+      await _showMemoryEditRefusal(memoryId, (
+        text: currentAppLocalizations().personalizationMemoryGone,
+        canRetry: false,
+      ));
+      return true;
+    }
+    final session = _memorySession;
     final refusal = await _runNativeMemoryAction(
       (memories, owner) => memories.updateItem(
         memory.id,
@@ -1380,9 +1408,13 @@ class SettingsController {
         owner: owner,
       ),
     );
+    if (session != _memorySession) return true;
+    // Text whose save failed stays on the page, with its Retry, whatever
+    // becomes of the type or path: they are saved with the text as stored.
+    final unsavedText = _memoryNotices[_memoryEditPageId(memory.id)];
     if (refusal != null) {
-      await _showMemoryEditRefusal(memory.id, refusal);
-    } else {
+      await _showMemoryEditRefusal(memory.id, refusal, content: unsavedText);
+    } else if (unsavedText == null) {
       await _showMemoryChangeWent(memory.id);
     }
     return true;
