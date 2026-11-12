@@ -115,6 +115,7 @@ class SettingsRow extends StatelessWidget {
     this.leading,
     this.onAction,
     this.inactive = false,
+    this.selected = false,
   });
 
   final NativeSheetItemConfig item;
@@ -135,6 +136,10 @@ class SettingsRow extends StatelessWidget {
   /// Acts on one of the row's other actions ([NativeSheetItemConfig.rowActions]).
   final SettingsRowAction? onAction;
 
+  /// Whether the row's page shows beside the list it is in, as a sidebar's
+  /// chosen row: tinted, and read out as selected.
+  final bool selected;
+
   /// Takes no taps, as while the page's Done is working.
   final bool inactive;
 
@@ -142,7 +147,7 @@ class SettingsRow extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final row = _buildRow(context);
+    final row = _selectedMark(context, _buildRow(context));
     if (!item.disabled && !inactive) return row;
     // Waiting on another row's action, or on the page's Done, the row takes
     // no taps; one disabled outright is dimmed and read out as unavailable.
@@ -150,6 +155,19 @@ class SettingsRow extends StatelessWidget {
       enabled: !item.disabled,
       child: IgnorePointer(
         child: item.disabled ? Opacity(opacity: 0.4, child: row) : row,
+      ),
+    );
+  }
+
+  Widget _selectedMark(BuildContext context, Widget row) {
+    if (!selected) return row;
+    return Semantics(
+      selected: true,
+      child: DecoratedBox(
+        decoration: BoxDecoration(
+          color: context.conduitTheme.buttonPrimary.withValues(alpha: 0.12),
+        ),
+        child: row,
       ),
     );
   }
