@@ -1177,6 +1177,31 @@ class NativeProfileSheetUser {
   }
 }
 
+/// A search field a page keeps above its rows, as a long list's filter.
+///
+/// What the person types goes back as a change of [id] a moment after
+/// typing pauses, and as the empty text when they cancel. Described again,
+/// the page keeps the text being typed unless [value] says otherwise.
+class NativeSheetSearchConfig {
+  const NativeSheetSearchConfig({
+    required this.id,
+    this.placeholder,
+    this.value = '',
+  });
+
+  final String id;
+  final String? placeholder;
+
+  /// The query the page's rows answer.
+  final String value;
+
+  Map<String, Object?> toMap() => {
+    'id': id,
+    if (placeholder != null) 'placeholder': placeholder,
+    'value': value,
+  };
+}
+
 class NativeSheetDetailConfig {
   const NativeSheetDetailConfig({
     required this.id,
@@ -1197,6 +1222,7 @@ class NativeSheetDetailConfig {
     this.busy = false,
     this.announcement,
     this.edited = false,
+    this.search,
   }) : assert(
          items.length == 0 || sections.length == 0,
          'A native detail must use either items or sections, not both.',
@@ -1236,6 +1262,9 @@ class NativeSheetDetailConfig {
   /// [discardPrompt] whatever was changed here since it appeared.
   final bool edited;
 
+  /// A search field above the rows, filtering them as the person types.
+  final NativeSheetSearchConfig? search;
+
   Map<String, Object?> toMap() {
     return {
       'id': id,
@@ -1259,6 +1288,7 @@ class NativeSheetDetailConfig {
       if (busy) 'busy': busy,
       if (announcement != null) 'announcement': announcement,
       if (edited) 'edited': edited,
+      if (search case final search?) 'search': search.toMap(),
     };
   }
 }
@@ -1859,6 +1889,14 @@ extension on NativeSheetDetailConfig {
       busy: busy ? true : null,
       announcement: announcement,
       edited: edited ? true : null,
+      search: switch (search) {
+        null => null,
+        final search => PlatformNativeSheetSearch(
+          id: search.id,
+          placeholder: search.placeholder,
+          value: search.value,
+        ),
+      },
     );
   }
 }
