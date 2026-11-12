@@ -1638,6 +1638,7 @@ class NativeSheetRowAction {
     this.sfSymbol,
     this.destructive = false,
     this.confirmMessage,
+    this.detailId,
   });
 
   final String id;
@@ -1648,12 +1649,17 @@ class NativeSheetRowAction {
   /// Asked before it acts, with [label] as the answer that goes ahead.
   final String? confirmMessage;
 
+  /// The page it opens, as a row leading to that page does, instead of
+  /// sending [id].
+  final String? detailId;
+
   Map<String, Object?> toMap() => {
     'id': id,
     'label': label,
     if (sfSymbol != null) 'sfSymbol': sfSymbol,
     'destructive': destructive,
     if (confirmMessage != null) 'confirmMessage': confirmMessage,
+    if (detailId != null) 'detailId': detailId,
   };
 
   PlatformNativeSheetRowAction toPlatform() => PlatformNativeSheetRowAction(
@@ -1662,6 +1668,7 @@ class NativeSheetRowAction {
     sfSymbol: sfSymbol,
     destructive: destructive,
     confirmMessage: confirmMessage,
+    detailId: detailId,
   );
 }
 
