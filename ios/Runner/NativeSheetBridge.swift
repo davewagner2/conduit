@@ -5792,6 +5792,13 @@ private final class NativeDetailTableViewController: UITableViewController, Nati
     /// Sends what is typed once typing pauses for a moment.
     fileprivate func searchTextChanged(_ query: String) {
         searchDebounce?.invalidate()
+        searchDebounce = nil
+        // Cleared (its clear button, say): the whole list comes back at
+        // once, as the field shows it empty.
+        if query.isEmpty {
+            sendSearch("")
+            return
+        }
         searchDebounce = Timer.scheduledTimer(
             withTimeInterval: 0.25,
             repeats: false
