@@ -5055,5 +5055,6 @@
   "pushHermesCommandLatest": "Будет установлена последняя опубликованная версия плагина.",
   "hermesJobCreatedNotifyFailed": "Задание создано, но включить для него уведомления не удалось.",
   "hermesJobUpdatedNotifyFailed": "Задание сохранено, но изменить его уведомления не удалось.",
-  "hermesJobNotifyNeedsScheduled": "Чтобы пользоваться этим, включите «Запланированные задачи» в уведомлениях."
+  "hermesJobNotifyNeedsScheduled": "Чтобы пользоваться этим, включите «Запланированные задачи» в уведомлениях.",
+  "pushSettingsMenuAction": "Настройки push"
 }

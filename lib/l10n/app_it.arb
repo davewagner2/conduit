@@ -5017,5 +5017,6 @@
   "pushHermesCommandLatest": "Questo installa l'ultima versione pubblicata del plugin.",
   "hermesJobCreatedNotifyFailed": "Attività creata, ma non è stato possibile attivarne le notifiche.",
   "hermesJobUpdatedNotifyFailed": "Attività salvata, ma non è stato possibile modificarne le notifiche.",
-  "hermesJobNotifyNeedsScheduled": "Attiva Attività pianificate in Notifiche per usarlo."
+  "hermesJobNotifyNeedsScheduled": "Attiva Attività pianificate in Notifiche per usarlo.",
+  "pushSettingsMenuAction": "Impostazioni push"
 }

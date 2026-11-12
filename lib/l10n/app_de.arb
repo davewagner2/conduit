@@ -5017,5 +5017,6 @@
   "pushHermesCommandLatest": "Damit wird die neueste veröffentlichte Version des Plugins installiert.",
   "hermesJobCreatedNotifyFailed": "Job erstellt, aber Benachrichtigungen konnten dafür nicht eingeschaltet werden.",
   "hermesJobUpdatedNotifyFailed": "Job gespeichert, aber seine Benachrichtigungen konnten nicht geändert werden.",
-  "hermesJobNotifyNeedsScheduled": "Schalte dafür in den Benachrichtigungen „Geplante Aufgaben“ ein."
+  "hermesJobNotifyNeedsScheduled": "Schalte dafür in den Benachrichtigungen „Geplante Aufgaben“ ein.",
+  "pushSettingsMenuAction": "Push-Einstellungen"
 }
