@@ -1666,6 +1666,7 @@ class _MarkdownCompilerBackend {
   ReceivePort? _exitPort;
   SendPort? _sendPort;
   Future<SendPort>? _startupFuture;
+  Completer<SendPort>? _startup;
   final Map<int, Completer<Map<String, Object?>>> _pendingSingle =
       <int, Completer<Map<String, Object?>>>{};
   final Map<int, Completer<List<Map<String, Object?>>>> _pendingBatch =
@@ -1728,7 +1729,10 @@ class _MarkdownCompilerBackend {
     _receivePort = receivePort;
     _errorPort = errorPort;
     _exitPort = exitPort;
-    final completer = Completer<SendPort>();
+    final completer = _startup = Completer<SendPort>();
+    // Ended by a dispose before anything waits on it, its error is still
+    // the awaited one below; it is never reported as unhandled.
+    completer.future.ignore();
 
     receivePort.listen((dynamic message) {
       if (message is SendPort) {
@@ -1905,6 +1909,16 @@ class _MarkdownCompilerBackend {
     final isolate = _isolate;
     _isolate = null;
     _startupFuture = null;
+    // A startup still waiting for the isolate ends now, its timeout with it,
+    // rather than run on for seconds after its service is gone.
+    final startup = _startup;
+    _startup = null;
+    if (startup != null && !startup.isCompleted) {
+      startup.completeError(
+        StateError('Markdown isolate stopped before it started'),
+        StackTrace.empty,
+      );
+    }
     if (killIsolate) {
       isolate?.kill(priority: Isolate.immediate);
     }
@@ -1927,6 +1941,7 @@ class _MarkdownPrepareBackend {
   ReceivePort? _exitPort;
   SendPort? _sendPort;
   Future<SendPort>? _startupFuture;
+  Completer<SendPort>? _startup;
   final Map<int, Completer<String>> _pendingPrepared =
       <int, Completer<String>>{};
   final Map<int, Completer<MarkdownPreparationPatch>> _pendingStreaming =
@@ -2013,7 +2028,10 @@ class _MarkdownPrepareBackend {
     _receivePort = receivePort;
     _errorPort = errorPort;
     _exitPort = exitPort;
-    final completer = Completer<SendPort>();
+    final completer = _startup = Completer<SendPort>();
+    // Ended by a dispose before anything waits on it, its error is still
+    // the awaited one below; it is never reported as unhandled.
+    completer.future.ignore();
 
     receivePort.listen((dynamic message) {
       if (message is SendPort) {
@@ -2198,6 +2216,16 @@ class _MarkdownPrepareBackend {
     final isolate = _isolate;
     _isolate = null;
     _startupFuture = null;
+    // A startup still waiting for the isolate ends now, its timeout with it,
+    // rather than run on for seconds after its service is gone.
+    final startup = _startup;
+    _startup = null;
+    if (startup != null && !startup.isCompleted) {
+      startup.completeError(
+        StateError('Markdown isolate stopped before it started'),
+        StackTrace.empty,
+      );
+    }
     if (killIsolate) {
       isolate?.kill(priority: Isolate.immediate);
     }

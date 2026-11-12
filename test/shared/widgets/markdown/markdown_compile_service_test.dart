@@ -118,6 +118,27 @@ void main() {
     expect(debugCompiledMarkdownCacheSize(), 1);
   });
 
+  testWidgets('a service disposed while its worker starts leaves no timer '
+      'behind', (tester) async {
+    final service = MarkdownCompileService(workerManager: WorkerManager());
+    final content = List<String>.filled(
+      200,
+      'worker-backed markdown',
+    ).join(' ');
+
+    service.prepareContent(content, streaming: true).ignore();
+    // The worker's spawn is asked for, and is on its way.
+    await tester.pump();
+    service.dispose();
+    // The worker is spawned for real meanwhile; its answer can no longer
+    // arrive, so only the dispose can end the wait for it.
+    await tester.runAsync(
+      () => Future<void>.delayed(const Duration(milliseconds: 200)),
+    );
+    await tester.pump();
+    // Ending here, the test fails if the startup timeout is still pending.
+  });
+
   test('markdown workers retire after the configured idle period', () async {
     final service = MarkdownCompileService(
       workerManager: WorkerManager(),
