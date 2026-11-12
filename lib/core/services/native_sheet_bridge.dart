@@ -1300,6 +1300,7 @@ class NativeSheetDetailConfig {
     this.maxHeightFraction,
     this.trailingActionId,
     this.trailingActionSfSymbol,
+    this.trailingActionDetailId,
     this.discardPrompt,
     this.busy = false,
     this.announcement,
@@ -1326,6 +1327,11 @@ class NativeSheetDetailConfig {
   /// and then sends this action.
   final String? trailingActionId;
   final String? trailingActionSfSymbol;
+
+  /// A bar button, drawn as [trailingActionSfSymbol], that pushes this page
+  /// inside Settings, as a row leading to it would: the "+" of a list that
+  /// adds to it. The page must be known, as a row's page must.
+  final String? trailingActionDetailId;
 
   /// What the page asks before its unsaved changes are dropped -- by Back,
   /// a swipe back, or the sheet swiped away. Null drops them without asking.
@@ -1366,6 +1372,8 @@ class NativeSheetDetailConfig {
       if (trailingActionId != null) 'trailingActionId': trailingActionId,
       if (trailingActionSfSymbol != null)
         'trailingActionSfSymbol': trailingActionSfSymbol,
+      if (trailingActionDetailId != null)
+        'trailingActionDetailId': trailingActionDetailId,
       if (discardPrompt case final prompt?) ...{
         'discardTitle': prompt.title,
         'discardMessage': prompt.message,
@@ -1976,6 +1984,7 @@ extension on NativeSheetDetailConfig {
       maxHeightFraction: maxHeightFraction,
       trailingActionId: trailingActionId,
       trailingActionSfSymbol: trailingActionSfSymbol,
+      trailingActionDetailId: trailingActionDetailId,
       discardTitle: discardPrompt?.title,
       discardMessage: discardPrompt?.message,
       discardConfirmLabel: discardPrompt?.discardLabel,
