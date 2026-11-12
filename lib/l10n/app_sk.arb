@@ -6857,6 +6857,7 @@
   "scheduledTasksFilterLabel": "Zobraziť",
   "personalConnectionsTurnOn": "Zapnúť",
   "personalConnectionsTurnOff": "Vypnúť",
+  "calendarDayEmpty": "Žiadne udalosti",
   "pushFallbackTitle": "Conduit",
   "pushFallbackBody": "Nové upozornenie",
   "pushReplyTitle": "Nová odpoveď",
